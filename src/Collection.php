@@ -4,32 +4,40 @@ declare(strict_types=1);
 
 namespace PhpSoftBox\Collection;
 
+use ArrayAccess;
 use ArrayIterator;
 use Countable;
+use InvalidArgumentException;
 use IteratorAggregate;
 use Traversable;
 
 use function array_chunk;
+use function array_diff;
 use function array_filter;
+use function array_intersect;
 use function array_is_list;
 use function array_key_exists;
 use function array_key_first;
+use function array_key_last;
 use function array_keys;
 use function array_map;
 use function array_merge;
-use function array_pop;
 use function array_push;
 use function array_reduce;
 use function array_replace;
 use function array_values;
 use function arsort;
 use function asort;
+use function ceil;
 use function count;
 use function explode;
+use function floor;
+use function gettype;
 use function in_array;
 use function is_array;
 use function is_bool;
 use function is_callable;
+use function is_numeric;
 use function is_object;
 use function is_scalar;
 use function is_string;
@@ -38,6 +46,10 @@ use function krsort;
 use function ksort;
 use function max;
 use function method_exists;
+use function min;
+use function property_exists;
+use function sort;
+use function str_contains;
 use function str_replace;
 use function uasort;
 use function ucwords;
@@ -46,12 +58,18 @@ use const JSON_UNESCAPED_SLASHES;
 use const JSON_UNESCAPED_UNICODE;
 use const SORT_REGULAR;
 
+/**
+ * @template TKey of array-key
+ * @template TValue
+ * @implements IteratorAggregate<TKey, TValue>
+ */
 class Collection implements IteratorAggregate, Countable
 {
     /**
-     * @param array $items Инициализационный массив
+     * @param array<TKey, TValue> $items Инициализационный массив
      */
     public function __construct(
+        /** @var array<TKey, TValue> */
         private array $items = [],
     ) {
     }
@@ -66,6 +84,8 @@ class Collection implements IteratorAggregate, Countable
 
     /**
      * Получить все элементы
+     *
+     * @return array<TKey, TValue>
      */
     public function all(): array
     {
@@ -74,6 +94,8 @@ class Collection implements IteratorAggregate, Countable
 
     /**
      * Преобразовать в массив (синоним all)
+     *
+     * @return array<TKey, TValue>
      */
     public function toArray(): array
     {
@@ -103,6 +125,8 @@ class Collection implements IteratorAggregate, Countable
 
     /**
      * Получить значение по верхнеуровневому ключу
+     *
+     * @return TValue|null
      */
     public function get(string|int $key, mixed $default = null): mixed
     {
@@ -123,25 +147,19 @@ class Collection implements IteratorAggregate, Countable
     // --- Dot-нотация (вложенные ключи вида a.b.c) ---
 
     /**
-     * Получить значение по пути (a.b.c)
+     * Получить значение по пути (a.b.c). При wildcard возвращает список значений.
      */
     public function getPath(string $path, mixed $default = null): mixed
     {
-        $segments        = $this->pathSegments($path);
-        [$found, $value] = $this->findPath($segments);
-
-        return $found ? $value : $default;
+        return ArrayHelper::getPath($this->items, $path, $default);
     }
 
     /**
-     * Проверить наличие пути (a.b.c)
+     * Проверить наличие пути (a.b.c). При wildcard проверяет наличие совпадений.
      */
     public function hasPath(string $path): bool
     {
-        $segments = $this->pathSegments($path);
-        [$found,] = $this->findPath($segments);
-
-        return $found;
+        return ArrayHelper::hasPath($this->items, $path);
     }
 
     /**
@@ -150,18 +168,7 @@ class Collection implements IteratorAggregate, Countable
      */
     public function setPath(string $path, mixed $value): self
     {
-        $segments = $this->pathSegments($path);
-        if ($segments === []) {
-            return $this; // пустой путь игнорируем
-        }
-        $ref = &$this->items;
-        foreach ($segments as $seg) {
-            if (!isset($ref[$seg]) || !is_array($ref[$seg])) {
-                $ref[$seg] = [];
-            }
-            $ref = &$ref[$seg];
-        }
-        $ref = $value;
+        $this->items = ArrayHelper::setPath($this->items, $path, $value);
 
         return $this;
     }
@@ -172,21 +179,7 @@ class Collection implements IteratorAggregate, Countable
      */
     public function forget(string|array $paths): self
     {
-        foreach ((array) $paths as $path) {
-            $segments = $this->pathSegments((string) $path);
-            if ($segments === []) {
-                continue;
-            }
-            $ref  = &$this->items;
-            $last = array_pop($segments);
-            foreach ($segments as $seg) {
-                if (!isset($ref[$seg]) || !is_array($ref[$seg])) {
-                    continue 2;
-                }
-                $ref = &$ref[$seg];
-            }
-            unset($ref[$last]);
-        }
+        $this->items = ArrayHelper::forget($this->items, $paths);
 
         return $this;
     }
@@ -196,14 +189,7 @@ class Collection implements IteratorAggregate, Countable
      */
     public function only(array $keys): self
     {
-        $out = [];
-        foreach ($keys as $k) {
-            if (array_key_exists($k, $this->items)) {
-                $out[$k] = $this->items[$k];
-            }
-        }
-
-        return new self($out);
+        return new self(ArrayHelper::only($this->items, $keys));
     }
 
     /**
@@ -219,12 +205,29 @@ class Collection implements IteratorAggregate, Countable
      */
     public function except(array $keys): self
     {
-        $out = $this->items;
-        foreach ($keys as $k) {
-            unset($out[$k]);
-        }
+        return new self(ArrayHelper::except($this->items, $keys));
+    }
 
-        return new self($out);
+    /**
+     * Оставить элементы, присутствующие в $items
+     */
+    public function intersect(array|Collection $items): self
+    {
+        $values = $items instanceof self ? $items->all() : $items;
+        $result = array_intersect($this->items, $values);
+
+        return new self($result);
+    }
+
+    /**
+     * Удалить элементы, присутствующие в $items
+     */
+    public function diff(array|Collection $items): self
+    {
+        $values = $items instanceof self ? $items->all() : $items;
+        $result = array_diff($this->items, $values);
+
+        return new self($result);
     }
 
     /**
@@ -272,6 +275,29 @@ class Collection implements IteratorAggregate, Countable
         }
 
         return new self($result);
+    }
+
+    /**
+     * Вернуть дубликаты значений (как в Laravel Collection::duplicates)
+     */
+    public function duplicates(string|callable|null $by = null, bool $strict = false): self
+    {
+        $duplicates = [];
+        $seen       = [];
+
+        foreach ($this->items as $key => $item) {
+            $value = $this->valueOf($item, $by, $key);
+            $hash  = $this->hashValue($value, $strict);
+
+            if (array_key_exists($hash, $seen)) {
+                $duplicates[$key] = $value;
+                continue;
+            }
+
+            $seen[$hash] = true;
+        }
+
+        return new self($duplicates);
     }
 
     // --- Индексирование по колонке ---
@@ -446,6 +472,102 @@ class Collection implements IteratorAggregate, Countable
     }
 
     /**
+     * Фильтрация по условию (Laravel-стиль)
+     */
+    public function where(string $key, mixed $operator = null, mixed $value = null): self
+    {
+        [$operator, $value] = $this->normalizeWhereArgs($operator, $value);
+
+        return $this->filter(function ($item) use ($key, $operator, $value) {
+            $actual = $this->dataGet($item, $key);
+
+            return $this->compare($actual, $operator, $value);
+        });
+    }
+
+    /**
+     * Строгое сравнение по ключу
+     */
+    public function whereStrict(string $key, mixed $value): self
+    {
+        return $this->filter(function ($item) use ($key, $value) {
+            return $this->dataGet($item, $key) === $value;
+        });
+    }
+
+    /**
+     * Значение входит в список
+     */
+    public function whereIn(string $key, array $values, bool $strict = false): self
+    {
+        return $this->filter(function ($item) use ($key, $values, $strict) {
+            $actual = $this->dataGet($item, $key);
+
+            return in_array($actual, $values, $strict);
+        });
+    }
+
+    /**
+     * Значение не входит в список
+     */
+    public function whereNotIn(string $key, array $values, bool $strict = false): self
+    {
+        return $this->filter(function ($item) use ($key, $values, $strict) {
+            $actual = $this->dataGet($item, $key);
+
+            return !in_array($actual, $values, $strict);
+        });
+    }
+
+    /**
+     * Значение находится между $min и $max (включительно)
+     */
+    public function whereBetween(string $key, array $values): self
+    {
+        [$min, $max] = $values;
+
+        return $this->filter(function ($item) use ($key, $min, $max) {
+            $actual = $this->dataGet($item, $key);
+
+            return $actual >= $min && $actual <= $max;
+        });
+    }
+
+    /**
+     * Значение не находится между $min и $max
+     */
+    public function whereNotBetween(string $key, array $values): self
+    {
+        [$min, $max] = $values;
+
+        return $this->filter(function ($item) use ($key, $min, $max) {
+            $actual = $this->dataGet($item, $key);
+
+            return $actual < $min || $actual > $max;
+        });
+    }
+
+    /**
+     * Значение равно null
+     */
+    public function whereNull(string $key): self
+    {
+        return $this->filter(function ($item) use ($key) {
+            return $this->dataGet($item, $key) === null;
+        });
+    }
+
+    /**
+     * Значение не равно null
+     */
+    public function whereNotNull(string $key): self
+    {
+        return $this->filter(function ($item) use ($key) {
+            return $this->dataGet($item, $key) !== null;
+        });
+    }
+
+    /**
      * Свёртка элементов
      */
     public function reduce(callable $fn, mixed $initial = null): mixed
@@ -454,7 +576,162 @@ class Collection implements IteratorAggregate, Countable
     }
 
     /**
+     * Сумма значений
+     */
+    public function sum(string|callable|null $by = null): int|float
+    {
+        $sum = 0;
+
+        foreach ($this->items as $key => $item) {
+            $value = $this->valueOf($item, $by, $key);
+            if (is_numeric($value)) {
+                $sum += $value;
+            }
+        }
+
+        return $sum;
+    }
+
+    /**
+     * Среднее арифметическое
+     */
+    public function average(string|callable|null $by = null): int|float|null
+    {
+        $sum   = 0;
+        $count = 0;
+
+        foreach ($this->items as $key => $item) {
+            $value = $this->valueOf($item, $by, $key);
+            if (is_numeric($value)) {
+                $sum += $value;
+                $count++;
+            }
+        }
+
+        if ($count === 0) {
+            return null;
+        }
+
+        return (float) $sum / $count;
+    }
+
+    /**
+     * Синоним average
+     */
+    public function avg(string|callable|null $by = null): int|float|null
+    {
+        return $this->average($by);
+    }
+
+    /**
+     * Медиана
+     */
+    public function median(string|callable|null $by = null): int|float|null
+    {
+        $values = $this->numericValues($by);
+        $count  = count($values);
+
+        if ($count === 0) {
+            return null;
+        }
+
+        sort($values);
+
+        $middle = (int) floor(($count - 1) / 2);
+        if ($count % 2 !== 0) {
+            return $values[$middle];
+        }
+
+        return ($values[$middle] + $values[$middle + 1]) / 2;
+    }
+
+    /**
+     * Перцентиль (0..100)
+     */
+    public function percentile(float|int $percent, string|callable|null $by = null): int|float|null
+    {
+        if ($percent < 0 || $percent > 100) {
+            throw new InvalidArgumentException('Percent must be between 0 and 100.');
+        }
+
+        $values = $this->numericValues($by);
+        $count  = count($values);
+
+        if ($count === 0) {
+            return null;
+        }
+
+        sort($values);
+
+        if ($count === 1) {
+            return $values[0];
+        }
+
+        $index = ($count - 1) * ($percent / 100);
+        $lower = (int) floor($index);
+        $upper = (int) ceil($index);
+
+        if ($lower === $upper) {
+            return $values[$lower];
+        }
+
+        $weight = $index - $lower;
+
+        return $values[$lower] + ($values[$upper] - $values[$lower]) * $weight;
+    }
+
+    /**
+     * Процент элементов, удовлетворяющих условию
+     */
+    public function percentage(callable|string|null $by = null): float
+    {
+        $total = count($this->items);
+        if ($total === 0) {
+            return 0.0;
+        }
+
+        $matched = 0;
+        foreach ($this->items as $key => $item) {
+            $value = $this->valueOf($item, $by, $key);
+            if ($value) {
+                $matched++;
+            }
+        }
+
+        return ($matched / $total) * 100;
+    }
+
+    /**
+     * Минимум
+     */
+    public function min(string|callable|null $by = null): int|float|null
+    {
+        $values = $this->numericValues($by);
+        if ($values === []) {
+            return null;
+        }
+
+        return min($values);
+    }
+
+    /**
+     * Максимум
+     */
+    public function max(string|callable|null $by = null): int|float|null
+    {
+        $values = $this->numericValues($by);
+        if ($values === []) {
+            return null;
+        }
+
+        return max($values);
+    }
+
+    /**
      * Первый элемент (по предикату или без него)
+     *
+     * @param callable(TValue): bool|null $fn
+     * @return TValue|null
      */
     public function first(?callable $fn = null, mixed $default = null): mixed
     {
@@ -470,6 +747,33 @@ class Collection implements IteratorAggregate, Countable
         }
 
         return $default;
+    }
+
+    /**
+     * Последний элемент (по предикату или без него)
+     *
+     * @param callable(TValue): bool|null $fn
+     * @return TValue|null
+     */
+    public function last(?callable $fn = null, mixed $default = null): mixed
+    {
+        if ($fn === null) {
+            if ($this->items === []) {
+                return $default;
+            }
+            $lastKey = array_key_last($this->items);
+
+            return $lastKey !== null ? $this->items[$lastKey] : $default;
+        }
+
+        $found = $default;
+        foreach ($this->items as $item) {
+            if ($fn($item)) {
+                $found = $item;
+            }
+        }
+
+        return $found;
     }
 
     /**
@@ -516,20 +820,7 @@ class Collection implements IteratorAggregate, Countable
      */
     public function dot(string $prepend = ''): self
     {
-        $result = [];
-        $stack  = function ($array, $prefix) use (&$stack, &$result) {
-            foreach ($array as $k => $v) {
-                $key = $prefix === '' ? (string) $k : $prefix . '.' . $k;
-                if (is_array($v)) {
-                    $stack($v, $key);
-                } else {
-                    $result[$key] = $v;
-                }
-            }
-        };
-        $stack($this->items, $prepend);
-
-        return new self($result);
+        return new self(ArrayHelper::dot($this->items, $prepend));
     }
 
     /**
@@ -537,20 +828,7 @@ class Collection implements IteratorAggregate, Countable
      */
     public static function undot(array $flat): self
     {
-        $out = [];
-        foreach ($flat as $path => $value) {
-            $segments = explode('.', (string) $path);
-            $ref      = &$out;
-            foreach ($segments as $seg) {
-                if (!isset($ref[$seg]) || !is_array($ref[$seg])) {
-                    $ref[$seg] = [];
-                }
-                $ref = &$ref[$seg];
-            }
-            $ref = $value;
-        }
-
-        return new self($out);
+        return new self(ArrayHelper::undot($flat));
     }
 
     /**
@@ -571,6 +849,23 @@ class Collection implements IteratorAggregate, Countable
         $b = $other instanceof self ? $other->all() : $other;
         if (!$recursive) {
             return new self(array_replace($this->items, $b));
+        }
+        if (array_is_list($this->items) && array_is_list($b)) {
+            if ($listMode === 'replace') {
+                return new self($b);
+            }
+            if ($listMode === 'append') {
+                return new self(array_merge($this->items, $b));
+            }
+
+            $acc = $this->items;
+            foreach ($b as $vv) {
+                if (!in_array($vv, $acc, true)) {
+                    $acc[] = $vv;
+                }
+            }
+
+            return new self($acc);
         }
         $out = $this->mergeArrays($this->items, $b, $listMode);
 
@@ -615,29 +910,115 @@ class Collection implements IteratorAggregate, Countable
 
     // --- Приватные хелперы ---
 
-    /**
-     * Разбить путь по точке в массив сегментов
-     */
-    private function pathSegments(string $path): array
+    private function valueOf(mixed $item, string|callable|null $by, string|int|null $key = null): mixed
     {
-        return $path === '' ? [] : explode('.', $path);
-    }
-
-    /**
-     * Найти значение по сегментам пути
-     * @return array [bool found, mixed value]
-     */
-    private function findPath(array $segments): array
-    {
-        $value = $this->items;
-        foreach ($segments as $seg) {
-            if (!is_array($value) || !array_key_exists($seg, $value)) {
-                return [false, null];
-            }
-            $value = $value[$seg];
+        if ($by === null) {
+            return $item;
         }
 
-        return [true, $value];
+        if (is_callable($by)) {
+            return $by($item, $key);
+        }
+
+        return $this->dataGet($item, $by);
+    }
+
+    private function numericValues(string|callable|null $by = null): array
+    {
+        $values = [];
+
+        foreach ($this->items as $key => $item) {
+            $value = $this->valueOf($item, $by, $key);
+            if (is_numeric($value)) {
+                $values[] = $value + 0;
+            }
+        }
+
+        return $values;
+    }
+
+    private function hashValue(mixed $value, bool $strict): string
+    {
+        if (is_scalar($value) || $value === null) {
+            if ($strict) {
+                return gettype($value) . ':' . (string) $value;
+            }
+
+            return (string) $value;
+        }
+
+        return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    private function normalizeWhereArgs(mixed $operator, mixed $value): array
+    {
+        $operators = ['=', '==', '!=', '<>', '<', '>', '<=', '>=', '===', '!=='];
+
+        if ($operator === null && $value === null) {
+            return ['=', null];
+        }
+
+        if ($value === null && !in_array($operator, $operators, true)) {
+            return ['=', $operator];
+        }
+
+        return [$operator, $value];
+    }
+
+    private function compare(mixed $left, string $operator, mixed $right): bool
+    {
+        return match ($operator) {
+            '=', '==' => $left == $right,
+            '===' => $left === $right,
+            '!=', '<>' => $left != $right,
+            '!=='   => $left !== $right,
+            '>'     => $left > $right,
+            '>='    => $left >= $right,
+            '<'     => $left < $right,
+            '<='    => $left <= $right,
+            default => $left == $right,
+        };
+    }
+
+    private function dataGet(mixed $target, string $key, mixed $default = null): mixed
+    {
+        if ($key === '') {
+            return $target;
+        }
+
+        if (str_contains($key, '*') && is_array($target)) {
+            return ArrayHelper::getPath($target, $key, $default);
+        }
+
+        $segments = explode('.', $key);
+        foreach ($segments as $segment) {
+            if (self::isAccessible($target) && ArrayHelper::exists($target, $segment)) {
+                $target = $target[$segment];
+                continue;
+            }
+
+            if (is_object($target)) {
+                if (isset($target->{$segment}) || property_exists($target, (string) $segment)) {
+                    $target = $target->{$segment};
+                    continue;
+                }
+
+                $getter = 'get' . str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $segment)));
+                if (method_exists($target, $getter)) {
+                    $target = $target->{$getter}();
+                    continue;
+                }
+            }
+
+            return $default;
+        }
+
+        return $target;
+    }
+
+    private static function isAccessible(mixed $value): bool
+    {
+        return is_array($value) || $value instanceof ArrayAccess;
     }
 
     /**
@@ -645,19 +1026,6 @@ class Collection implements IteratorAggregate, Countable
      */
     private function extract(mixed $item, string $key): mixed
     {
-        if (is_array($item) && array_key_exists($key, $item)) {
-            return $item[$key];
-        }
-        if (is_object($item)) {
-            if (isset($item->{$key})) {
-                return $item->{$key};
-            }
-            $getter = 'get' . str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $key)));
-            if (method_exists($item, $getter)) {
-                return $item->{$getter}();
-            }
-        }
-
-        return null;
+        return $this->dataGet($item, $key);
     }
 }

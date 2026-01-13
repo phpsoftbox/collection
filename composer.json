@@ -2,10 +2,23 @@
     "name": "phpsoftbox/collection",
     "description": "Collection component for the PhpSoftBox framework",
     "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Anton K.",
+            "email": "inspector-who@mail.ru"
+        }
+    ],
+    "config": {
+        "sort-packages": true
+    },
     "require": {
         "php": "^8.4"
     },
     "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.93",
+        "phpsoftbox/cli-app": "dev-master",
+        "phpsoftbox/cs-fixer": "^1.0.3",
         "phpunit/phpunit": "^11.2"
     },
     "autoload": {
@@ -19,6 +32,9 @@
         }
     },
     "scripts": {
-        "test": "phpunit"
-    }
+        "test": "phpunit",
+        "cs:fix": "vendor/bin/psb-cs-fixer fix",
+        "cs:check": "vendor/bin/psb-cs-fixer check --diff"
+    },
+    "minimum-stability": "dev"
 }
