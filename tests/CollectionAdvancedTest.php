@@ -5,12 +5,43 @@ declare(strict_types=1);
 namespace PhpSoftBox\Collection\Tests;
 
 use PhpSoftBox\Collection\Collection;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\CoversMethod;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 use function array_values;
 
+#[CoversClass(Collection::class)]
+#[CoversMethod(Collection::class, 'getPath')]
+#[CoversMethod(Collection::class, 'hasPath')]
+#[CoversMethod(Collection::class, 'setPath')]
+#[CoversMethod(Collection::class, 'forget')]
+#[CoversMethod(Collection::class, 'unique')]
+#[CoversMethod(Collection::class, 'indexBy')]
+#[CoversMethod(Collection::class, 'toArray')]
+#[CoversMethod(Collection::class, 'values')]
+#[CoversMethod(Collection::class, 'resetKeys')]
+#[CoversMethod(Collection::class, 'add')]
+#[CoversMethod(Collection::class, 'has')]
+#[CoversMethod(Collection::class, 'get')]
+#[CoversMethod(Collection::class, 'remove')]
+#[CoversMethod(Collection::class, 'chunk')]
+#[CoversMethod(Collection::class, 'sortByKeys')]
+#[CoversMethod(Collection::class, 'sortByValues')]
+#[CoversMethod(Collection::class, 'sortBy')]
+#[CoversMethod(Collection::class, 'insertAt')]
+#[CoversMethod(Collection::class, 'insertBefore')]
+#[CoversMethod(Collection::class, 'insertAfter')]
+#[CoversMethod(Collection::class, 'only')]
+#[CoversMethod(Collection::class, 'pick')]
+#[CoversMethod(Collection::class, 'except')]
 final class CollectionAdvancedTest extends TestCase
 {
+    /**
+     * Проверяет dot-нотацию get/set/forget/has.
+     */
+    #[Test]
     public function testDotNotationGetSetForgetHas(): void
     {
         $arr = new Collection(['a' => ['b' => ['c' => 1]]]);
@@ -25,6 +56,10 @@ final class CollectionAdvancedTest extends TestCase
         $this->assertFalse($arr->hasPath('a.b.c'));
     }
 
+    /**
+     * Проверяет unique по значениям и по ключу.
+     */
+    #[Test]
     public function testUnique(): void
     {
         $arr = new Collection([1, 1, 2, 2, 3]);
@@ -43,6 +78,10 @@ final class CollectionAdvancedTest extends TestCase
         $this->assertSame(2, $u[1]['id']);
     }
 
+    /**
+     * Проверяет indexBy.
+     */
+    #[Test]
     public function testIndexBy(): void
     {
         $arr = new Collection([
@@ -56,6 +95,10 @@ final class CollectionAdvancedTest extends TestCase
         $this->assertSame('A', $by['10']['name']);
     }
 
+    /**
+     * Проверяет toArray/values/resetKeys.
+     */
+    #[Test]
     public function testToArrayValuesResetKeys(): void
     {
         $arr = new Collection([10 => 'a', 20 => 'b']);
@@ -65,6 +108,10 @@ final class CollectionAdvancedTest extends TestCase
         $this->assertSame(['a','b'], $arr->resetKeys()->all());
     }
 
+    /**
+     * Проверяет top-level add/get/has/remove.
+     */
+    #[Test]
     public function testTopLevelGetAddHasRemove(): void
     {
         $arr = new Collection(['x' => 1]);
@@ -82,6 +129,10 @@ final class CollectionAdvancedTest extends TestCase
         $this->assertFalse($arr->has('x'));
     }
 
+    /**
+     * Проверяет chunk.
+     */
+    #[Test]
     public function testChunk(): void
     {
         $arr = new Collection([1,2,3,4,5]);
@@ -93,6 +144,10 @@ final class CollectionAdvancedTest extends TestCase
         $this->assertSame([5], array_values($chunks[2]));
     }
 
+    /**
+     * Проверяет сортировки.
+     */
+    #[Test]
     public function testSorts(): void
     {
         $arr = new Collection(['b' => 2, 'a' => 1, 'c' => 3]);
@@ -113,6 +168,10 @@ final class CollectionAdvancedTest extends TestCase
         $this->assertSame('B', $resDesc[0]['name']);
     }
 
+    /**
+     * Проверяет вставки insertAt/insertBefore/insertAfter.
+     */
+    #[Test]
     public function testInsertAtBeforeAfter(): void
     {
         $arr = new Collection(['a' => 1, 'b' => 2]);
@@ -127,6 +186,10 @@ final class CollectionAdvancedTest extends TestCase
         $this->assertSame(['y' => 7, 'a' => 1, 'x' => 9, 'b' => 2, 'z' => 8], $arr->all());
     }
 
+    /**
+     * Проверяет only/pick/except.
+     */
+    #[Test]
     public function testOnlyPickExcept(): void
     {
         $arr = new Collection(['a' => 1, 'b' => 2, 'c' => 3]);
