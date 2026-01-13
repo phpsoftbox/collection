@@ -17,9 +17,9 @@ final class CollectionMergeTest extends TestCase
         ]);
 
         $right = [
-                    'db'    => ['host' => 'remote', 'ports' => [4406]],
-                    'debug' => true,
-                ];
+            'db'    => ['host' => 'remote', 'ports' => [4406]],
+            'debug' => true,
+        ];
         $merged = $left->merge($right); // recursive:true, list: replace
         $this->assertSame('remote', $merged->getPath('db.host'));
         // списки по умолчанию заменяются
@@ -33,7 +33,7 @@ final class CollectionMergeTest extends TestCase
 
         $right  = ['list' => [3, 4]];
         $merged = $left->merge($right, ['recursive' => true, 'list' => 'append']);
-        $this->assertSame([1,2,3,4], $merged->getPath('list'));
+        $this->assertSame([1, 2, 3, 4], $merged->getPath('list'));
     }
 
     public function testListAppendUnique(): void
@@ -42,7 +42,7 @@ final class CollectionMergeTest extends TestCase
 
         $right  = ['list' => [2, 3, 3]];
         $merged = $left->merge($right, ['recursive' => true, 'list' => 'append_unique']);
-        $this->assertSame([1,2,2,3], $merged->getPath('list'));
+        $this->assertSame([1, 2, 2, 3], $merged->getPath('list'));
     }
 
     public function testNonRecursiveReplace(): void
@@ -51,6 +51,7 @@ final class CollectionMergeTest extends TestCase
 
         $right  = ['db' => ['host' => 'b']];
         $merged = $left->merge($right, false); // не рекурсивно
+
         // заменился весь подмассив, без углубления
         $this->assertSame(['host' => 'b'], $merged->getPath('db'));
         $this->assertSame('dev', $merged->getPath('mode'));

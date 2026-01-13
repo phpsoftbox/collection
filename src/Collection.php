@@ -8,6 +8,7 @@ use ArrayIterator;
 use Countable;
 use IteratorAggregate;
 use Traversable;
+use PhpSoftBox\Collection\ArrayHelper;
 
 use function array_chunk;
 use function array_filter;
@@ -123,25 +124,19 @@ class Collection implements IteratorAggregate, Countable
     // --- Dot-нотация (вложенные ключи вида a.b.c) ---
 
     /**
-     * Получить значение по пути (a.b.c)
+     * Получить значение по пути (a.b.c). При wildcard возвращает список значений.
      */
     public function getPath(string $path, mixed $default = null): mixed
     {
-        $segments        = $this->pathSegments($path);
-        [$found, $value] = $this->findPath($segments);
-
-        return $found ? $value : $default;
+        return ArrayHelper::getPath($this->items, $path, $default);
     }
 
     /**
-     * Проверить наличие пути (a.b.c)
+     * Проверить наличие пути (a.b.c). При wildcard проверяет наличие совпадений.
      */
     public function hasPath(string $path): bool
     {
-        $segments = $this->pathSegments($path);
-        [$found,] = $this->findPath($segments);
-
-        return $found;
+        return ArrayHelper::hasPath($this->items, $path);
     }
 
     /**
@@ -150,18 +145,7 @@ class Collection implements IteratorAggregate, Countable
      */
     public function setPath(string $path, mixed $value): self
     {
-        $segments = $this->pathSegments($path);
-        if ($segments === []) {
-            return $this; // пустой путь игнорируем
-        }
-        $ref = &$this->items;
-        foreach ($segments as $seg) {
-            if (!isset($ref[$seg]) || !is_array($ref[$seg])) {
-                $ref[$seg] = [];
-            }
-            $ref = &$ref[$seg];
-        }
-        $ref = $value;
+        $this->items = ArrayHelper::setPath($this->items, $path, $value);
 
         return $this;
     }
@@ -172,21 +156,7 @@ class Collection implements IteratorAggregate, Countable
      */
     public function forget(string|array $paths): self
     {
-        foreach ((array) $paths as $path) {
-            $segments = $this->pathSegments((string) $path);
-            if ($segments === []) {
-                continue;
-            }
-            $ref  = &$this->items;
-            $last = array_pop($segments);
-            foreach ($segments as $seg) {
-                if (!isset($ref[$seg]) || !is_array($ref[$seg])) {
-                    continue 2;
-                }
-                $ref = &$ref[$seg];
-            }
-            unset($ref[$last]);
-        }
+        $this->items = ArrayHelper::forget($this->items, $paths);
 
         return $this;
     }
@@ -196,14 +166,7 @@ class Collection implements IteratorAggregate, Countable
      */
     public function only(array $keys): self
     {
-        $out = [];
-        foreach ($keys as $k) {
-            if (array_key_exists($k, $this->items)) {
-                $out[$k] = $this->items[$k];
-            }
-        }
-
-        return new self($out);
+        return new self(ArrayHelper::only($this->items, $keys));
     }
 
     /**
@@ -219,12 +182,7 @@ class Collection implements IteratorAggregate, Countable
      */
     public function except(array $keys): self
     {
-        $out = $this->items;
-        foreach ($keys as $k) {
-            unset($out[$k]);
-        }
-
-        return new self($out);
+        return new self(ArrayHelper::except($this->items, $keys));
     }
 
     /**
@@ -516,20 +474,7 @@ class Collection implements IteratorAggregate, Countable
      */
     public function dot(string $prepend = ''): self
     {
-        $result = [];
-        $stack  = function ($array, $prefix) use (&$stack, &$result) {
-            foreach ($array as $k => $v) {
-                $key = $prefix === '' ? (string) $k : $prefix . '.' . $k;
-                if (is_array($v)) {
-                    $stack($v, $key);
-                } else {
-                    $result[$key] = $v;
-                }
-            }
-        };
-        $stack($this->items, $prepend);
-
-        return new self($result);
+        return new self(ArrayHelper::dot($this->items, $prepend));
     }
 
     /**
@@ -537,20 +482,7 @@ class Collection implements IteratorAggregate, Countable
      */
     public static function undot(array $flat): self
     {
-        $out = [];
-        foreach ($flat as $path => $value) {
-            $segments = explode('.', (string) $path);
-            $ref      = &$out;
-            foreach ($segments as $seg) {
-                if (!isset($ref[$seg]) || !is_array($ref[$seg])) {
-                    $ref[$seg] = [];
-                }
-                $ref = &$ref[$seg];
-            }
-            $ref = $value;
-        }
-
-        return new self($out);
+        return new self(ArrayHelper::undot($flat));
     }
 
     /**
@@ -614,31 +546,6 @@ class Collection implements IteratorAggregate, Countable
     }
 
     // --- Приватные хелперы ---
-
-    /**
-     * Разбить путь по точке в массив сегментов
-     */
-    private function pathSegments(string $path): array
-    {
-        return $path === '' ? [] : explode('.', $path);
-    }
-
-    /**
-     * Найти значение по сегментам пути
-     * @return array [bool found, mixed value]
-     */
-    private function findPath(array $segments): array
-    {
-        $value = $this->items;
-        foreach ($segments as $seg) {
-            if (!is_array($value) || !array_key_exists($seg, $value)) {
-                return [false, null];
-            }
-            $value = $value[$seg];
-        }
-
-        return [true, $value];
-    }
 
     /**
      * Извлечь значение по ключу у массива/объекта (поле/геттер)
