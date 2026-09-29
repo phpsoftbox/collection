@@ -77,6 +77,12 @@ final class ArrayHelperMethodsTest extends TestCase
 {
     /**
      * Проверяет базовые операции only/except/add и проверку доступности.
+     *
+     * @see ArrayHelper::only()
+     * @see ArrayHelper::except()
+     * @see ArrayHelper::add()
+     * @see ArrayHelper::accessible()
+     * @see ArrayHelper::exists()
      */
     #[Test]
     public function testOnlyExceptAddAccessibleExists(): void
@@ -96,6 +102,16 @@ final class ArrayHelperMethodsTest extends TestCase
 
     /**
      * Проверяет get/set/has/forget и dot-операции.
+     *
+     * @see ArrayHelper::get()
+     * @see ArrayHelper::has()
+     * @see ArrayHelper::set()
+     * @see ArrayHelper::setPath()
+     * @see ArrayHelper::forget()
+     * @see ArrayHelper::dot()
+     * @see ArrayHelper::undot()
+     * @see ArrayHelper::pathMatches()
+     * @see ArrayHelper::path()
      */
     #[Test]
     public function testGetSetHasForgetDotUndotPath(): void
@@ -125,6 +141,12 @@ final class ArrayHelperMethodsTest extends TestCase
 
     /**
      * Проверяет типизированные getters.
+     *
+     * @see ArrayHelper::array()
+     * @see ArrayHelper::boolean()
+     * @see ArrayHelper::integer()
+     * @see ArrayHelper::float()
+     * @see ArrayHelper::string()
      */
     #[Test]
     public function testArrayBooleanIntegerFloatString(): void
@@ -140,6 +162,13 @@ final class ArrayHelperMethodsTest extends TestCase
 
     /**
      * Проверяет collapse/crossJoin/divide/flatten/take/wrap.
+     *
+     * @see ArrayHelper::collapse()
+     * @see ArrayHelper::crossJoin()
+     * @see ArrayHelper::divide()
+     * @see ArrayHelper::flatten()
+     * @see ArrayHelper::take()
+     * @see ArrayHelper::wrap()
      */
     #[Test]
     public function testCollapseCrossJoinDivideFlattenTakeWrap(): void
@@ -163,6 +192,12 @@ final class ArrayHelperMethodsTest extends TestCase
 
     /**
      * Проверяет from/every/some/first/last.
+     *
+     * @see ArrayHelper::from()
+     * @see ArrayHelper::every()
+     * @see ArrayHelper::some()
+     * @see ArrayHelper::first()
+     * @see ArrayHelper::last()
      */
     #[Test]
     public function testFromEverySomeFirstLast(): void
@@ -181,6 +216,12 @@ final class ArrayHelperMethodsTest extends TestCase
 
     /**
      * Проверяет hasAll/hasAny/isAssoc/isList/join.
+     *
+     * @see ArrayHelper::hasAll()
+     * @see ArrayHelper::hasAny()
+     * @see ArrayHelper::isAssoc()
+     * @see ArrayHelper::isList()
+     * @see ArrayHelper::join()
      */
     #[Test]
     public function testHasAllAnyIsAssocIsListJoin(): void
@@ -199,6 +240,10 @@ final class ArrayHelperMethodsTest extends TestCase
 
     /**
      * Проверяет keyBy/pluck/select.
+     *
+     * @see ArrayHelper::keyBy()
+     * @see ArrayHelper::pluck()
+     * @see ArrayHelper::select()
      */
     #[Test]
     public function testKeyByPluckSelect(): void
@@ -218,6 +263,11 @@ final class ArrayHelperMethodsTest extends TestCase
 
     /**
      * Проверяет map/partition/withKeys/spread.
+     *
+     * @see ArrayHelper::map()
+     * @see ArrayHelper::mapSpread()
+     * @see ArrayHelper::mapWithKeys()
+     * @see ArrayHelper::partition()
      */
     #[Test]
     public function testMapPartitionWithKeysSpread(): void
@@ -233,6 +283,12 @@ final class ArrayHelperMethodsTest extends TestCase
 
     /**
      * Проверяет prepend/pull/push/prependKeysWith.
+     *
+     * @see ArrayHelper::prepend()
+     * @see ArrayHelper::prependKeysWith()
+     * @see ArrayHelper::push()
+     * @see ArrayHelper::pull()
+     * @see ArrayHelper::has()
      */
     #[Test]
     public function testPrependPullPushPrependKeysWith(): void
@@ -253,6 +309,13 @@ final class ArrayHelperMethodsTest extends TestCase
 
     /**
      * Проверяет query/random/shuffle/reject/where/whereNotNull.
+     *
+     * @see ArrayHelper::query()
+     * @see ArrayHelper::random()
+     * @see ArrayHelper::shuffle()
+     * @see ArrayHelper::reject()
+     * @see ArrayHelper::where()
+     * @see ArrayHelper::whereNotNull()
      */
     #[Test]
     public function testQueryRandomShuffleRejectWhere(): void
@@ -281,6 +344,13 @@ final class ArrayHelperMethodsTest extends TestCase
 
     /**
      * Проверяет sort/sortDesc/sortRecursive/sole/toCss*.
+     *
+     * @see ArrayHelper::sort()
+     * @see ArrayHelper::sortDesc()
+     * @see ArrayHelper::sortRecursive()
+     * @see ArrayHelper::sole()
+     * @see ArrayHelper::toCssClasses()
+     * @see ArrayHelper::toCssStyles()
      */
     #[Test]
     public function testSortSortRecursiveSoleToCss(): void

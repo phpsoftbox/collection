@@ -108,15 +108,17 @@ $c->has('b'); // false
 ```
 
 ### `public function get(string|int $key, mixed $default = null): mixed`
-Возвращает значение по ключу. Если ключ отсутствует — возвращает `$default`.
+Возвращает значение по ключу. `$default` возвращается только если ключа нет; сохранённый `null`
+возвращается как `null`. Чтобы отличить «ключа нет» от «значение null», используйте `has()`.
 
 Пример:
 ```php
-$c = Collection::from(['a' => 1]);
+$c = Collection::from(['a' => 1, 'b' => null]);
 
-$c->get('a');        // 1
-$c->get('missing');  // null
+$c->get('a');          // 1
+$c->get('missing');    // null
 $c->get('missing', 0); // 0
+$c->get('b', 0);       // null — ключ есть, значение null
 ```
 
 ### `public function remove(string|int $key): self`
@@ -240,7 +242,7 @@ $c->except(['b'])->all();
 ### `public function values(): self`
 Возвращает новую коллекцию со значениями, переиндексированными с 0.
 
-Полезно после `filter()`, если нужна плотная нумерация.
+Полезно после `filter()`/`where*()`, если нужна плотная нумерация: они сохраняют исходные ключи.
 
 Пример:
 ```php
@@ -289,12 +291,12 @@ $c->diff([2, 3])->all();
 
 ## Уникальность и индексирование
 
-### `public function unique(string|callable|null $by = null): self`
+### `public function unique(string|Closure|null $by = null): self`
 Возвращает новую коллекцию без дубликатов.
 
 Правила:
-- `$by` как `string`: уникальность по полю массива или свойству/геттеру объекта.
-- `$by` как `callable`: уникальность по вычисленному ключу.
+- `$by` как `string`: уникальность по полю массива или свойству/геттеру объекта (путь в dot-нотации).
+- `$by` как `Closure`: уникальность по вычисленному ключу.
 - `$by === null`: сравнение по значению (для скаляров напрямую, для сложных типов — через JSON-представление).
 
 Примеры:
@@ -325,7 +327,7 @@ $items->unique(fn (string $v) => strtolower($v))->all();
 // ['a', 'b']
 ```
 
-### `public function duplicates(string|callable|null $by = null, bool $strict = false): self`
+### `public function duplicates(string|Closure|null $by = null, bool $strict = false): self`
 Возвращает дубликаты (начиная со второй встречи значения).
 
 Пример:
@@ -337,17 +339,17 @@ Collection::from([1, 2, 1, 1])->duplicates()->all();
 Пример с ключом:
 ```php
 $users = Collection::from([
-    ['id' => 1, 'email' => 'a@test'],
-    ['id' => 2, 'email' => 'b@test'],
-    ['id' => 3, 'email' => 'a@test'],
+    ['id' => 1, 'email' => 'a@example.com'],
+    ['id' => 2, 'email' => 'b@example.com'],
+    ['id' => 3, 'email' => 'a@example.com'],
 ]);
 
 $users->duplicates('email')->all();
-// [2 => 'a@test']
+// [2 => 'a@example.com']
 ```
 
-### `public function indexBy(string|callable $key): self`
-Переиндексирует элементы по полю/свойству/геттеру (если `$key` — строка) или по результату callable.
+### `public function indexBy(string|Closure $key): self`
+Переиндексирует элементы по полю/свойству/геттеру (если `$key` — строка) или по результату `Closure`.
 
 Пример (по полю массива):
 ```php
@@ -412,12 +414,12 @@ $c->sortByKeys()->all();
 // ['a' => 2, 'b' => 1]
 ```
 
-### `public function sortBy(string|callable $by, bool $desc = false): self`
+### `public function sortBy(string|Closure $by, bool $desc = false): self`
 Сортирует по извлекаемому значению.
 
 `$by`:
 - `string`: берётся поле массива/свойство объекта/геттер.
-- `callable`: вычисляет значение для сравнения.
+- `Closure`: вычисляет значение для сравнения.
 
 Пример (по полю массива):
 ```php
@@ -491,7 +493,7 @@ $c->all();
 ## Функциональные операции
 
 ### `public function map(callable $fn): self`
-Преобразует каждый элемент функцией и возвращает новую коллекцию.
+Преобразует каждый элемент функцией и возвращает новую коллекцию. Ключи сохраняются.
 
 Пример:
 ```php
@@ -499,18 +501,25 @@ $c = Collection::from([1, 2, 3]);
 
 $c->map(fn (int $v) => $v * 10)->all();
 // [10, 20, 30]
+
+Collection::from(['a' => 1, 'b' => 2])->map(fn (int $v) => $v * 10)->all();
+// ['a' => 10, 'b' => 20]
 ```
 
 ### `public function filter(callable $fn): self`
 Фильтрует элементы предикатом и возвращает новую коллекцию.
 
-Особенность: после фильтрации выполняется переиндексация `array_values()`, поэтому ключи становятся 0..N.
+Ключи сохраняются (как у `map()` и `where*()`): после фильтрации списка нумерация может идти с пропусками.
+Для плотной нумерации 0..N вызовите `values()`.
 
 Пример:
 ```php
 $c = Collection::from([1, 2, 3, 4]);
 
 $c->filter(fn (int $v) => $v % 2 === 0)->all();
+// [1 => 2, 3 => 4]
+
+$c->filter(fn (int $v) => $v % 2 === 0)->values()->all();
 // [2, 4]
 ```
 
@@ -561,6 +570,9 @@ $c->all();
 
 ## Фильтрация where
 
+Все методы `where*()` работают через `filter()` и сохраняют ключи исходной коллекции. `$key` — путь к полю
+в dot-нотации (массив, свойство или геттер объекта).
+
 ### `public function where(string $key, mixed $operator = null, mixed $value = null): self`
 Фильтрует по ключу с поддержкой операторов (`=`, `!=`, `>`, `<`, `>=`, `<=`, `===`, `!==`).
 
@@ -572,6 +584,9 @@ $c = Collection::from([
 ]);
 
 $c->where('score', '>', 10)->all();
+// [1 => ['id' => 2, 'score' => 20]]
+
+$c->where('score', '>', 10)->values()->all();
 // [['id' => 2, 'score' => 20]]
 ```
 
@@ -600,25 +615,31 @@ $c->where('score', '>', 10)->all();
 
 ## Математические операции
 
-### `public function sum(string|callable|null $by = null): int|float`
-Суммирует значения (опционально по ключу/коллбэку).
+`$by`: `null` — сами элементы; строка — всегда путь к полю (`sum('count')` суммирует поле `count`, функция PHP
+`count()` не вызывается); `Closure` — вычисляемое значение, получает `($item, $key)`. Прочие callable
+(строки-функции, массивы `[$obj, 'method']`) не принимаются — оберните в `Closure`
+(`fn (string $v): int => strlen($v)`). Встроенные функции через first-class callable (`strlen(...)`) не подходят:
+они не принимают второй аргумент `$key`.
 
-### `public function average(string|callable|null $by = null): int|float|null`
+### `public function sum(string|Closure|null $by = null): int|float`
+Суммирует значения (опционально по пути к полю или `Closure`).
+
+### `public function average(string|Closure|null $by = null): int|float|null`
 Среднее арифметическое. Синоним: `avg()`.
 
-### `public function median(string|callable|null $by = null): int|float|null`
+### `public function median(string|Closure|null $by = null): int|float|null`
 Медиана набора чисел.
 
-### `public function percentile(float|int $percent, string|callable|null $by = null): int|float|null`
+### `public function percentile(float|int $percent, string|Closure|null $by = null): int|float|null`
 Перцентиль (0..100). Использует линейную интерполяцию.
 
-### `public function percentage(callable|string|null $by = null): float`
+### `public function percentage(string|Closure|null $by = null): float`
 Процент элементов, удовлетворяющих условию/ключу.
 
-### `public function min(string|callable|null $by = null): int|float|null`
+### `public function min(string|Closure|null $by = null): int|float|null`
 Минимум среди числовых значений.
 
-### `public function max(string|callable|null $by = null): int|float|null`
+### `public function max(string|Closure|null $by = null): int|float|null`
 Максимум среди числовых значений.
 
 ---
@@ -626,7 +647,8 @@ $c->where('score', '>', 10)->all();
 ## Dot helpers: dot/undot
 
 ### `public function dot(string $prepend = ''): self`
-Преобразует вложенный массив в плоский массив с dot-ключами.
+Преобразует вложенный массив в плоский массив с dot-ключами. Пустые массивы сохраняются как значения
+(`['tags' => []]` → `['tags' => []]`), поэтому `undot(dot($x))` возвращает исходную структуру.
 
 Параметры:
 - `$prepend` — префикс для всех ключей (опционально).

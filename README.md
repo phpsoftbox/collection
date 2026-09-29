@@ -32,6 +32,14 @@ $config = Collection::from([])
 // ['db' => ['host' => 'localhost', 'port' => 3306]]
 ```
 
+## Соглашения
+- Селекторы `$by`/`$key` (`unique`, `duplicates`, `indexBy`, `sortBy`, `sum`, `avg`, `median`, `percentile`,
+  `percentage`, `min`, `max`, `ArrayHelper::keyBy/partition`): строка — всегда путь к полю, вычисление — только
+  `Closure`. `sum('count')` суммирует поле `count`, а не вызывает функцию `count()`.
+- `map()`, `filter()` и `where*()` сохраняют ключи; для списка 0..N вызывайте `values()`.
+- `get($key, $default)` возвращает `$default` только при отсутствии ключа; сохранённый `null` остаётся `null`.
+- `dot()` сохраняет пустые массивы как значения.
+
 ## Документация
 Справочник по всем методам: [`docs/index.md`](docs/index.md)
 

@@ -6,6 +6,7 @@ namespace PhpSoftBox\Collection;
 
 use ArrayAccess;
 use ArrayIterator;
+use Closure;
 use Countable;
 use InvalidArgumentException;
 use IteratorAggregate;
@@ -36,7 +37,6 @@ use function gettype;
 use function in_array;
 use function is_array;
 use function is_bool;
-use function is_callable;
 use function is_numeric;
 use function is_object;
 use function is_scalar;
@@ -59,6 +59,12 @@ use const JSON_UNESCAPED_UNICODE;
 use const SORT_REGULAR;
 
 /**
+ * Параметры-селекторы ($by/$key у unique(), sortBy(), sum() и т.п.): строка — всегда путь к полю
+ * (dot-нотация, свойство или геттер), вычисляемое значение — только Closure. Строка с именем функции PHP
+ * (`count`, `date`) не вызывается.
+ *
+ * Ключи: map(), filter() и where*() сохраняют ключи исходной коллекции; для списка вызовите values().
+ *
  * @template TKey of array-key
  * @template TValue
  * @implements IteratorAggregate<TKey, TValue>
@@ -124,13 +130,18 @@ class Collection implements IteratorAggregate, Countable
     }
 
     /**
-     * Получить значение по верхнеуровневому ключу
+     * Получить значение по верхнеуровневому ключу.
+     * $default возвращается только при отсутствии ключа: сохранённый null возвращается как null.
      *
      * @return TValue|null
      */
     public function get(string|int $key, mixed $default = null): mixed
     {
-        return $this->items[$key] ?? $default;
+        if (!array_key_exists($key, $this->items)) {
+            return $default;
+        }
+
+        return $this->items[$key];
     }
 
     /**
@@ -250,11 +261,11 @@ class Collection implements IteratorAggregate, Countable
 
     /**
      * Удалить дубликаты элементов
-     * - $by = string: взять поле массива/свойство объекта
-     * - $by = callable: вычислить ключ уникальности
+     * - $by = string: путь к полю массива/свойству/геттеру объекта (строка никогда не вызывается как функция)
+     * - $by = Closure: вычислить ключ уникальности
      * - null: сравнение по значению (нестрогая сериализация для сложных типов)
      */
-    public function unique(string|callable|null $by = null): self
+    public function unique(string|Closure|null $by = null): self
     {
         $seen   = [];
         $result = [];
@@ -262,7 +273,7 @@ class Collection implements IteratorAggregate, Countable
             $key = null;
             if (is_string($by)) {
                 $key = $this->extract($item, $by);
-            } elseif (is_callable($by)) {
+            } elseif ($by instanceof Closure) {
                 $key = $by($item);
             } else {
                 $key = is_scalar($item) ? $item : json_encode($item, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -280,7 +291,7 @@ class Collection implements IteratorAggregate, Countable
     /**
      * Вернуть дубликаты значений (как в Laravel Collection::duplicates)
      */
-    public function duplicates(string|callable|null $by = null, bool $strict = false): self
+    public function duplicates(string|Closure|null $by = null, bool $strict = false): self
     {
         $duplicates = [];
         $seen       = [];
@@ -303,9 +314,9 @@ class Collection implements IteratorAggregate, Countable
     // --- Индексирование по колонке ---
 
     /**
-     * Переиндексировать элементы по колонке/функции
+     * Переиндексировать элементы по пути к полю (строка) или по результату Closure
      */
-    public function indexBy(string|callable $key): self
+    public function indexBy(string|Closure $key): self
     {
         $out = [];
         foreach ($this->items as $item) {
@@ -363,9 +374,9 @@ class Collection implements IteratorAggregate, Countable
     }
 
     /**
-     * Сортировка по извлекаемому значению (поле или функция)
+     * Сортировка по извлекаемому значению (путь к полю или Closure)
      */
-    public function sortBy(string|callable $by, bool $desc = false): self
+    public function sortBy(string|Closure $by, bool $desc = false): self
     {
         $copy = $this->items;
         uasort($copy, function ($a, $b) use ($by, $desc) {
@@ -464,11 +475,12 @@ class Collection implements IteratorAggregate, Countable
     }
 
     /**
-     * Отфильтровать элементы функцией (с переиндексацией)
+     * Отфильтровать элементы функцией. Ключи сохраняются, как у map() и where*();
+     * для списка с плотной нумерацией вызовите values().
      */
     public function filter(callable $fn): self
     {
-        return new self(array_values(array_filter($this->items, $fn)));
+        return new self(array_filter($this->items, $fn));
     }
 
     /**
@@ -578,7 +590,7 @@ class Collection implements IteratorAggregate, Countable
     /**
      * Сумма значений
      */
-    public function sum(string|callable|null $by = null): int|float
+    public function sum(string|Closure|null $by = null): int|float
     {
         $sum = 0;
 
@@ -595,7 +607,7 @@ class Collection implements IteratorAggregate, Countable
     /**
      * Среднее арифметическое
      */
-    public function average(string|callable|null $by = null): int|float|null
+    public function average(string|Closure|null $by = null): int|float|null
     {
         $sum   = 0;
         $count = 0;
@@ -618,7 +630,7 @@ class Collection implements IteratorAggregate, Countable
     /**
      * Синоним average
      */
-    public function avg(string|callable|null $by = null): int|float|null
+    public function avg(string|Closure|null $by = null): int|float|null
     {
         return $this->average($by);
     }
@@ -626,7 +638,7 @@ class Collection implements IteratorAggregate, Countable
     /**
      * Медиана
      */
-    public function median(string|callable|null $by = null): int|float|null
+    public function median(string|Closure|null $by = null): int|float|null
     {
         $values = $this->numericValues($by);
         $count  = count($values);
@@ -648,7 +660,7 @@ class Collection implements IteratorAggregate, Countable
     /**
      * Перцентиль (0..100)
      */
-    public function percentile(float|int $percent, string|callable|null $by = null): int|float|null
+    public function percentile(float|int $percent, string|Closure|null $by = null): int|float|null
     {
         if ($percent < 0 || $percent > 100) {
             throw new InvalidArgumentException('Percent must be between 0 and 100.');
@@ -683,7 +695,7 @@ class Collection implements IteratorAggregate, Countable
     /**
      * Процент элементов, удовлетворяющих условию
      */
-    public function percentage(callable|string|null $by = null): float
+    public function percentage(string|Closure|null $by = null): float
     {
         $total = count($this->items);
         if ($total === 0) {
@@ -704,7 +716,7 @@ class Collection implements IteratorAggregate, Countable
     /**
      * Минимум
      */
-    public function min(string|callable|null $by = null): int|float|null
+    public function min(string|Closure|null $by = null): int|float|null
     {
         $values = $this->numericValues($by);
         if ($values === []) {
@@ -717,7 +729,7 @@ class Collection implements IteratorAggregate, Countable
     /**
      * Максимум
      */
-    public function max(string|callable|null $by = null): int|float|null
+    public function max(string|Closure|null $by = null): int|float|null
     {
         $values = $this->numericValues($by);
         if ($values === []) {
@@ -910,20 +922,20 @@ class Collection implements IteratorAggregate, Countable
 
     // --- Приватные хелперы ---
 
-    private function valueOf(mixed $item, string|callable|null $by, string|int|null $key = null): mixed
+    private function valueOf(mixed $item, string|Closure|null $by, string|int|null $key = null): mixed
     {
         if ($by === null) {
             return $item;
         }
 
-        if (is_callable($by)) {
+        if ($by instanceof Closure) {
             return $by($item, $key);
         }
 
         return $this->dataGet($item, $by);
     }
 
-    private function numericValues(string|callable|null $by = null): array
+    private function numericValues(string|Closure|null $by = null): array
     {
         $values = [];
 
@@ -968,15 +980,15 @@ class Collection implements IteratorAggregate, Countable
     private function compare(mixed $left, string $operator, mixed $right): bool
     {
         return match ($operator) {
-            '=', '==' => $left == $right,
-            '===' => $left === $right,
+            '=', '=='  => $left == $right,
+            '==='      => $left === $right,
             '!=', '<>' => $left != $right,
-            '!=='   => $left !== $right,
-            '>'     => $left > $right,
-            '>='    => $left >= $right,
-            '<'     => $left < $right,
-            '<='    => $left <= $right,
-            default => $left == $right,
+            '!=='      => $left !== $right,
+            '>'        => $left > $right,
+            '>='       => $left >= $right,
+            '<'        => $left < $right,
+            '<='       => $left <= $right,
+            default    => $left == $right,
         };
     }
 

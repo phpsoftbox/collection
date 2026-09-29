@@ -18,6 +18,8 @@ final class ArrayHelperTest extends TestCase
 {
     /**
      * Проверяет, что path поддерживает wildcard и возвращает все совпадения.
+     *
+     * @see ArrayHelper::path()
      */
     #[Test]
     public function pathSupportsWildcard(): void
@@ -39,6 +41,8 @@ final class ArrayHelperTest extends TestCase
 
     /**
      * Проверяет, что path возвращает present=false, если совпадений нет.
+     *
+     * @see ArrayHelper::path()
      */
     #[Test]
     public function pathReturnsAbsentWhenMissing(): void
@@ -58,6 +62,8 @@ final class ArrayHelperTest extends TestCase
 
     /**
      * Проверяет, что getPath поддерживает wildcard и возвращает список значений.
+     *
+     * @see ArrayHelper::getPath()
      */
     #[Test]
     public function getPathSupportsWildcard(): void
@@ -76,6 +82,8 @@ final class ArrayHelperTest extends TestCase
 
     /**
      * Проверяет, что hasPath учитывает wildcard.
+     *
+     * @see ArrayHelper::hasPath()
      */
     #[Test]
     public function hasPathSupportsWildcard(): void

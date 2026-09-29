@@ -23,6 +23,9 @@ final class CollectionWhereTest extends TestCase
 {
     /**
      * Проверяет where и whereStrict.
+     *
+     * @see Collection::where()
+     * @see Collection::whereStrict()
      */
     #[Test]
     public function testWhereAndWhereStrict(): void
@@ -33,11 +36,13 @@ final class CollectionWhereTest extends TestCase
         ]);
 
         $this->assertSame([['id' => 1, 'score' => 10], ['id' => 2, 'score' => '10']], $c->where('score', 10)->all());
-        $this->assertSame([['id' => 1, 'score' => 10]], $c->whereStrict('score', 10)->all());
+        $this->assertSame([0 => ['id' => 1, 'score' => 10]], $c->whereStrict('score', 10)->all());
     }
 
     /**
      * Проверяет where с операторами.
+     *
+     * @see Collection::where()
      */
     #[Test]
     public function testWhereOperators(): void
@@ -47,12 +52,19 @@ final class CollectionWhereTest extends TestCase
             ['id' => 2, 'score' => 15],
         ]);
 
-        $this->assertSame([['id' => 2, 'score' => 15]], $c->where('score', '>', 10)->all());
-        $this->assertSame([['id' => 1, 'score' => 5]], $c->where('score', '<', 10)->all());
+        $this->assertSame([1 => ['id' => 2, 'score' => 15]], $c->where('score', '>', 10)->all());
+        $this->assertSame([0 => ['id' => 1, 'score' => 5]], $c->where('score', '<', 10)->all());
     }
 
     /**
      * Проверяет whereIn/whereNotIn/whereBetween/whereNull.
+     *
+     * @see Collection::whereIn()
+     * @see Collection::whereNotIn()
+     * @see Collection::whereBetween()
+     * @see Collection::whereNotBetween()
+     * @see Collection::whereNull()
+     * @see Collection::whereNotNull()
      */
     #[Test]
     public function testWhereInNotInBetweenNull(): void
@@ -65,45 +77,45 @@ final class CollectionWhereTest extends TestCase
 
         $this->assertSame(
             [
-                ['id' => 1, 'score' => 5, 'meta' => ['rank' => 1]],
-                ['id' => 3, 'score' => 25, 'meta' => ['rank' => 3]],
+                0 => ['id' => 1, 'score' => 5, 'meta' => ['rank' => 1]],
+                2 => ['id' => 3, 'score' => 25, 'meta' => ['rank' => 3]],
             ],
             $c->whereIn('id', [1, 3])->all(),
         );
 
         $this->assertSame(
             [
-                ['id' => 2, 'score' => 15, 'meta' => ['rank' => null]],
+                1 => ['id' => 2, 'score' => 15, 'meta' => ['rank' => null]],
             ],
             $c->whereNotIn('id', [1, 3])->all(),
         );
 
         $this->assertSame(
             [
-                ['id' => 2, 'score' => 15, 'meta' => ['rank' => null]],
+                1 => ['id' => 2, 'score' => 15, 'meta' => ['rank' => null]],
             ],
             $c->whereBetween('score', [10, 20])->all(),
         );
 
         $this->assertSame(
             [
-                ['id' => 1, 'score' => 5, 'meta' => ['rank' => 1]],
-                ['id' => 3, 'score' => 25, 'meta' => ['rank' => 3]],
+                0 => ['id' => 1, 'score' => 5, 'meta' => ['rank' => 1]],
+                2 => ['id' => 3, 'score' => 25, 'meta' => ['rank' => 3]],
             ],
             $c->whereNotBetween('score', [10, 20])->all(),
         );
 
         $this->assertSame(
             [
-                ['id' => 2, 'score' => 15, 'meta' => ['rank' => null]],
+                1 => ['id' => 2, 'score' => 15, 'meta' => ['rank' => null]],
             ],
             $c->whereNull('meta.rank')->all(),
         );
 
         $this->assertSame(
             [
-                ['id' => 1, 'score' => 5, 'meta' => ['rank' => 1]],
-                ['id' => 3, 'score' => 25, 'meta' => ['rank' => 3]],
+                0 => ['id' => 1, 'score' => 5, 'meta' => ['rank' => 1]],
+                2 => ['id' => 3, 'score' => 25, 'meta' => ['rank' => 3]],
             ],
             $c->whereNotNull('meta.rank')->all(),
         );

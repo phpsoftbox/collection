@@ -29,6 +29,9 @@ final class CollectionTest extends TestCase
 {
     /**
      * Проверяет all() и Countable.
+     *
+     * @see Collection::all()
+     * @see Collection::__construct()
      */
     #[Test]
     public function testAllAndCount(): void
@@ -41,6 +44,12 @@ final class CollectionTest extends TestCase
 
     /**
      * Проверяет map/filter/reduce.
+     *
+     * @see Collection::map()
+     * @see Collection::all()
+     * @see Collection::filter()
+     * @see Collection::reduce()
+     * @see Collection::__construct()
      */
     #[Test]
     public function testMapFilterReduce(): void
@@ -51,7 +60,7 @@ final class CollectionTest extends TestCase
         $this->assertSame([2, 4, 6, 8], $mapped->all());
 
         $filtered = $arr->filter(fn ($x) => $x % 2 === 0);
-        $this->assertSame([2, 4], $filtered->all());
+        $this->assertSame([1 => 2, 3 => 4], $filtered->all());
 
         $sum = $arr->reduce(fn ($carry, $x) => ($carry ?? 0) + $x, 0);
         $this->assertSame(10, $sum);
@@ -59,6 +68,9 @@ final class CollectionTest extends TestCase
 
     /**
      * Проверяет first с предикатом и default.
+     *
+     * @see Collection::first()
+     * @see Collection::__construct()
      */
     #[Test]
     public function testFirst(): void
@@ -72,6 +84,9 @@ final class CollectionTest extends TestCase
 
     /**
      * Проверяет last с предикатом и default.
+     *
+     * @see Collection::last()
+     * @see Collection::__construct()
      */
     #[Test]
     public function testLast(): void
@@ -85,6 +100,9 @@ final class CollectionTest extends TestCase
 
     /**
      * Проверяет push и итератор.
+     *
+     * @see Collection::push()
+     * @see Collection::__construct()
      */
     #[Test]
     public function testPushAndIterator(): void
@@ -97,6 +115,9 @@ final class CollectionTest extends TestCase
 
     /**
      * Проверяет keys().
+     *
+     * @see Collection::keys()
+     * @see Collection::__construct()
      */
     #[Test]
     public function testCollectionKeys(): void
