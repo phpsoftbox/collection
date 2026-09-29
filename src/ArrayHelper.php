@@ -197,7 +197,7 @@ final class ArrayHelper
         $stack  = static function ($array, $prefix) use (&$stack, &$result): void {
             foreach ($array as $k => $v) {
                 $key = $prefix === '' ? (string) $k : $prefix . '.' . $k;
-                if (is_array($v)) {
+                if (is_array($v) && $v !== []) {
                     $stack($v, $key);
                 } else {
                     $result[$key] = $v;
@@ -531,12 +531,12 @@ final class ArrayHelper
         return implode($glue, $array) . $finalGlue . $last;
     }
 
-    public static function keyBy(array $array, callable|string $keyBy): array
+    public static function keyBy(array $array, string|Closure $keyBy): array
     {
         $result = [];
 
         foreach ($array as $item) {
-            $key                   = is_callable($keyBy) ? $keyBy($item) : self::dataGet($item, $keyBy);
+            $key                   = $keyBy instanceof Closure ? $keyBy($item) : self::dataGet($item, $keyBy);
             $result[(string) $key] = $item;
         }
 
@@ -616,13 +616,13 @@ final class ArrayHelper
         return $result;
     }
 
-    public static function partition(array $array, callable|string $callback): array
+    public static function partition(array $array, string|Closure $callback): array
     {
         $passed = [];
         $failed = [];
 
         foreach ($array as $key => $value) {
-            $result = is_callable($callback) ? $callback($value, $key) : self::dataGet($value, $callback);
+            $result = $callback instanceof Closure ? $callback($value, $key) : self::dataGet($value, $callback);
 
             if ($result) {
                 $passed[$key] = $value;

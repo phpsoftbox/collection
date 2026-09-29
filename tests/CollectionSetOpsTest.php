@@ -18,6 +18,9 @@ final class CollectionSetOpsTest extends TestCase
 {
     /**
      * Проверяет intersect/diff.
+     *
+     * @see Collection::intersect()
+     * @see Collection::diff()
      */
     #[Test]
     public function testIntersectAndDiff(): void
@@ -31,6 +34,8 @@ final class CollectionSetOpsTest extends TestCase
 
     /**
      * Проверяет duplicates.
+     *
+     * @see Collection::duplicates()
      */
     #[Test]
     public function testDuplicates(): void
@@ -40,11 +45,11 @@ final class CollectionSetOpsTest extends TestCase
         $this->assertSame([2 => 1, 3 => 1], $c->duplicates()->all());
 
         $users = new Collection([
-            ['id' => 1, 'email' => 'a@test'],
-            ['id' => 2, 'email' => 'b@test'],
-            ['id' => 3, 'email' => 'a@test'],
+            ['id' => 1, 'email' => 'a@example.com'],
+            ['id' => 2, 'email' => 'b@example.com'],
+            ['id' => 3, 'email' => 'a@example.com'],
         ]);
 
-        $this->assertSame([2 => 'a@test'], $users->duplicates('email')->all());
+        $this->assertSame([2 => 'a@example.com'], $users->duplicates('email')->all());
     }
 }

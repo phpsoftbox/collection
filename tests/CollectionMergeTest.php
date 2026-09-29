@@ -16,6 +16,8 @@ final class CollectionMergeTest extends TestCase
 {
     /**
      * Проверяет рекурсивное merge по умолчанию.
+     *
+     * @see Collection::merge()
      */
     #[Test]
     public function testRecursiveReplaceByDefault(): void
@@ -38,6 +40,8 @@ final class CollectionMergeTest extends TestCase
 
     /**
      * Проверяет стратегию list append.
+     *
+     * @see Collection::merge()
      */
     #[Test]
     public function testListAppend(): void
@@ -51,6 +55,8 @@ final class CollectionMergeTest extends TestCase
 
     /**
      * Проверяет стратегию list append_unique.
+     *
+     * @see Collection::merge()
      */
     #[Test]
     public function testListAppendUnique(): void
@@ -64,6 +70,8 @@ final class CollectionMergeTest extends TestCase
 
     /**
      * Проверяет нерекурсивное merge.
+     *
+     * @see Collection::merge()
      */
     #[Test]
     public function testNonRecursiveReplace(): void
@@ -80,6 +88,8 @@ final class CollectionMergeTest extends TestCase
 
     /**
      * Проверяет merge списков на корневом уровне.
+     *
+     * @see Collection::merge()
      */
     #[Test]
     public function testRootListAppendUnique(): void

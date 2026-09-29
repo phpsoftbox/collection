@@ -36,7 +36,8 @@
 Удаляет ключ(и) по dot-пути.
 
 ### `dot(array $items, string $prepend = ''): array`
-Преобразует вложенный массив в плоский по dot-ключам.
+Преобразует вложенный массив в плоский по dot-ключам. Пустые массивы сохраняются как значения:
+`dot(['a' => ['b' => []]])` → `['a.b' => []]`.
 
 ### `undot(array $flat): array`
 Собирает вложенный массив из плоского (dot-ключи).
@@ -125,8 +126,9 @@
 ### `mapWithKeys(array $array, callable $callback): array`
 Формирует новые ключи/значения из коллбэка.
 
-### `partition(array $array, callable|string $callback): array`
-Разделяет на две группы: прошедшие и не прошедшие.
+### `partition(array $array, string|Closure $callback): array`
+Разделяет на две группы: прошедшие и не прошедшие. Строка — путь к полю (значение приводится к bool),
+`Closure` получает `($value, $key)`. Строка с именем функции PHP не вызывается.
 
 ### `reject(array $array, callable|bool $callback = true): array`
 Отбрасывает элементы, удовлетворяющие условию.
@@ -142,8 +144,8 @@
 
 ## Индексация и извлечение
 
-### `keyBy(array $array, callable|string $keyBy): array`
-Переиндексирует по ключу/коллбэку.
+### `keyBy(array $array, string|Closure $keyBy): array`
+Переиндексирует по пути к полю (строка) или по результату `Closure`. Строка с именем функции PHP не вызывается.
 
 ### `pluck(array $array, string|int $value, string|int|null $key = null): array`
 Извлекает значения по ключу (опционально — с новыми ключами).

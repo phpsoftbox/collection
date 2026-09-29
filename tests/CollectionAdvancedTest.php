@@ -40,6 +40,11 @@ final class CollectionAdvancedTest extends TestCase
 {
     /**
      * Проверяет dot-нотацию get/set/forget/has.
+     *
+     * @see Collection::hasPath()
+     * @see Collection::getPath()
+     * @see Collection::setPath()
+     * @see Collection::forget()
      */
     #[Test]
     public function testDotNotationGetSetForgetHas(): void
@@ -58,6 +63,8 @@ final class CollectionAdvancedTest extends TestCase
 
     /**
      * Проверяет unique по значениям и по ключу.
+     *
+     * @see Collection::unique()
      */
     #[Test]
     public function testUnique(): void
@@ -80,6 +87,8 @@ final class CollectionAdvancedTest extends TestCase
 
     /**
      * Проверяет indexBy.
+     *
+     * @see Collection::indexBy()
      */
     #[Test]
     public function testIndexBy(): void
@@ -97,6 +106,10 @@ final class CollectionAdvancedTest extends TestCase
 
     /**
      * Проверяет toArray/values/resetKeys.
+     *
+     * @see Collection::toArray()
+     * @see Collection::values()
+     * @see Collection::resetKeys()
      */
     #[Test]
     public function testToArrayValuesResetKeys(): void
@@ -110,6 +123,11 @@ final class CollectionAdvancedTest extends TestCase
 
     /**
      * Проверяет top-level add/get/has/remove.
+     *
+     * @see Collection::has()
+     * @see Collection::get()
+     * @see Collection::add()
+     * @see Collection::remove()
      */
     #[Test]
     public function testTopLevelGetAddHasRemove(): void
@@ -131,6 +149,8 @@ final class CollectionAdvancedTest extends TestCase
 
     /**
      * Проверяет chunk.
+     *
+     * @see Collection::chunk()
      */
     #[Test]
     public function testChunk(): void
@@ -146,6 +166,10 @@ final class CollectionAdvancedTest extends TestCase
 
     /**
      * Проверяет сортировки.
+     *
+     * @see Collection::sortByKeys()
+     * @see Collection::sortByValues()
+     * @see Collection::sortBy()
      */
     #[Test]
     public function testSorts(): void
@@ -170,6 +194,10 @@ final class CollectionAdvancedTest extends TestCase
 
     /**
      * Проверяет вставки insertAt/insertBefore/insertAfter.
+     *
+     * @see Collection::insertAt()
+     * @see Collection::insertBefore()
+     * @see Collection::insertAfter()
      */
     #[Test]
     public function testInsertAtBeforeAfter(): void
@@ -188,6 +216,10 @@ final class CollectionAdvancedTest extends TestCase
 
     /**
      * Проверяет only/pick/except.
+     *
+     * @see Collection::only()
+     * @see Collection::pick()
+     * @see Collection::except()
      */
     #[Test]
     public function testOnlyPickExcept(): void

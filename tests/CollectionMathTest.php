@@ -23,6 +23,11 @@ final class CollectionMathTest extends TestCase
 {
     /**
      * Проверяет sum/average/median на числах.
+     *
+     * @see Collection::sum()
+     * @see Collection::average()
+     * @see Collection::avg()
+     * @see Collection::median()
      */
     #[Test]
     public function testSumAverageMedian(): void
@@ -41,6 +46,9 @@ final class CollectionMathTest extends TestCase
 
     /**
      * Проверяет sum/average с ключом.
+     *
+     * @see Collection::sum()
+     * @see Collection::average()
      */
     #[Test]
     public function testSumWithCallback(): void
@@ -56,6 +64,8 @@ final class CollectionMathTest extends TestCase
 
     /**
      * Проверяет percentile.
+     *
+     * @see Collection::percentile()
      */
     #[Test]
     public function testPercentile(): void
@@ -69,6 +79,10 @@ final class CollectionMathTest extends TestCase
 
     /**
      * Проверяет percentage/min/max.
+     *
+     * @see Collection::percentage()
+     * @see Collection::min()
+     * @see Collection::max()
      */
     #[Test]
     public function testPercentageMinMax(): void
