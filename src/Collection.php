@@ -968,15 +968,15 @@ class Collection implements IteratorAggregate, Countable
     private function compare(mixed $left, string $operator, mixed $right): bool
     {
         return match ($operator) {
-            '=', '==' => $left == $right,
-            '===' => $left === $right,
+            '=', '=='  => $left == $right,
+            '==='      => $left === $right,
             '!=', '<>' => $left != $right,
-            '!=='   => $left !== $right,
-            '>'     => $left > $right,
-            '>='    => $left >= $right,
-            '<'     => $left < $right,
-            '<='    => $left <= $right,
-            default => $left == $right,
+            '!=='      => $left !== $right,
+            '>'        => $left > $right,
+            '>='       => $left >= $right,
+            '<'        => $left < $right,
+            '<='       => $left <= $right,
+            default    => $left == $right,
         };
     }
 
